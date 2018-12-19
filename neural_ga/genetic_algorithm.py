@@ -18,15 +18,14 @@ class Individual(nn.Module):
         self.noise_table = noise_table
         self.sigma = sigma
 
-        self.conv1 = nn.Conv2d(4, 32, kernel_size=8, stride=4)
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=4, stride=2)
-        self.conv3 = nn.Conv2d(64, 64, kernel_size=3, stride=1)
+        self.conv1 = nn.Conv2d(4, 16, kernel_size=8, stride=4)
+        self.conv2 = nn.Conv2d(16, 32, kernel_size=4, stride=2)
 
-        self.fc1 = nn.Linear(64 * 7 * 7, 512)
-        self.fc2 = nn.Linear(512, a_dim)
+        self.fc1 = nn.Linear(32 * 9 * 9, 256)
+        self.fc2 = nn.Linear(256, a_dim)
 
-        self.distribution = torch.distributions.Categorical
-        self.layers = [self.conv1, self.conv2, self.conv3, self.fc1, self.fc2]
+        # self.distribution = torch.distributions.Categorical
+        self.layers = [self.conv1, self.conv2, self.fc1, self.fc2]
 
         self.n_param = 0
         self.param_shapes, self.n_params = {}, {}
@@ -60,10 +59,9 @@ class Individual(nn.Module):
 
         input_sizes = {
             'conv1.weight': 4 * 84 * 84,
-            'conv2.weight': 32 * 20 * 20,
-            'conv3.weight': 64 * 9 * 9,
-            'fc1.weight': 64 * 7 * 7,
-            'fc2.weight': 512
+            'conv2.weight': 16 * 20 * 20,
+            'fc1.weight': 32 * 9 * 9,
+            'fc2.weight': 256
         }
         idx = 0
         for param, key in zip(self.parameters(), self.state_dict().keys()):
@@ -89,7 +87,6 @@ class Individual(nn.Module):
     def forward(self, x):
         x = F.relu(self.conv1(x))
         x = F.relu(self.conv2(x))
-        x = F.relu(self.conv3(x))
 
         x = x.view(x.size(0), -1)
 
@@ -101,10 +98,12 @@ class Individual(nn.Module):
     def choose_action(self, s):
         self.eval()
         logits = self.forward(s)
-        prob = F.softmax(logits, dim=1).data
-
-        m = self.distribution(prob)
-        return m.sample().numpy()[0]
+        a = logits.argmax(dim=1).numpy()[0]
+        return a
+        # prob = F.softmax(logits, dim=1).data
+        #
+        # m = self.distribution(prob)
+        # return m.sample().numpy()[0]
 
     def update(self, genotype):
         self.genotypes.append(genotype)
