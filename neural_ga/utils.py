@@ -7,6 +7,7 @@ import torchvision.transforms as T
 import time
 import json
 import logging
+from datetime import datetime
 logger = logging.getLogger(__name__)
 
 
@@ -94,5 +95,6 @@ def render(env, name='Render', rescale=1, sleep_time=0.01):
     time.sleep(sleep_time)
 
 def save_json(code, prefix=''):
-    with open(prefix + 'model_{:d}.json'.format(int(code['fitness'])), 'w') as f:
+    time_s = datetime.now().strftime('%m%d-%H%M')
+    with open(prefix + 'model_{}_{:d}.json'.format(time_s, int(code['fitness'])), 'w') as f:
         json.dump(code, f)

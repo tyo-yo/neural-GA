@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 import json
-from .utils import SharedNoiseTable, rollout
+from neural_ga.utils import SharedNoiseTable, rollout
 import copy
 import logging
 logger = logging.getLogger(__name__)
