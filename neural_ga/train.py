@@ -19,7 +19,7 @@ handler2.setLevel(DEBUG)
 logger.addHandler(handler2)
 
 ENV_NAME = 'Frostbite-v0'
-MAX_GENERATIONS = 200
+MAX_GENERATIONS = 50
 POPULATION_SIZE = 1000
 TRUNCATE_SIZE = 20
 ELITE_CANDIDATES_SIZE = 10
@@ -46,7 +46,7 @@ def run_individual(individual, mutate=False):
     worker.load(individual)
     if mutate:
         worker.mutate()
-        worker.rollout(env)
+        worker.rollout(env, max_steps=300)
     else:
         worker.rollout(env, episode=ELITE_CANDIDATES_ROLLOUT_COUNT)
     worker_name = mp.current_process().name

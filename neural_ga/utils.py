@@ -74,6 +74,7 @@ def rollout(model, env, max_steps=1000, rendering=False, return_steps=False,
                 render(env)
             if done:
                 env.reset()
+                convert_to_state.reset()
                 total_steps += i
                 break
 
