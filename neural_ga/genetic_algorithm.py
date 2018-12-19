@@ -167,8 +167,14 @@ class Individual(nn.Module):
         self.set_parameters(code['genotypes'], code['initial_genotype'])
         return self
 
-    def rollout(self, env, max_steps=1000, rendering=False, episode=1):
-        self.fitness = rollout(self, env, max_steps=max_steps,
-                               rendering=rendering, return_steps=False,
-                               episode=episode)
-        return self.fitness
+    def rollout(self, env, max_steps=1000, rendering=False, episode=1, return_steps=False):
+        if not return_steps:
+            self.fitness = rollout(self, env, max_steps=max_steps,
+                                   rendering=rendering, return_steps=return_steps,
+                                   episode=episode)
+            return self.fitness
+        else:
+            self.fitness, steps = rollout(self, env, max_steps=max_steps,
+                                   rendering=rendering, return_steps=return_steps,
+                                   episode=episode)
+            return self.fitness, steps

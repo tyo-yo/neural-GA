@@ -5,6 +5,7 @@ import numpy as np
 from multiprocessing import Pool, Value
 import multiprocessing as mp
 from datetime import datetime
+import copy
 
 from logging import getLogger, StreamHandler, DEBUG, FileHandler
 logger = getLogger(__name__)
@@ -38,22 +39,22 @@ def init_processes(*initargs):
     STATE_SHAPE = (4, 84, 84)
     N_A = env.action_space.n
     worker = Individual(STATE_SHAPE, N_A, noise_table, sigma=MUTATION_POWER)
-    print(mp.current_process().name,'init')
+    print(mp.current_process().name, 'init')
 
 
 def run_individual(individual, mutate=False):
     global worker, env, count, avg_fitness
     worker.load(individual)
+    worker_name = mp.current_process().name
     if mutate:
         worker.mutate()
-        worker.rollout(env, max_steps=300)
+        fitness, steps = worker.rollout(env, max_steps=2000, episode=1, return_steps=True)
+        avg_fitness.value = worker.fitness * 0.001 + avg_fitness.value * 0.999
     else:
-        worker.rollout(env, episode=ELITE_CANDIDATES_ROLLOUT_COUNT)
-    worker_name = mp.current_process().name
+        fitness, steps = worker.rollout(env, max_steps=3000, episode=ELITE_CANDIDATES_ROLLOUT_COUNT, return_steps=True)
     count.value += 1
-    avg_fitness.value = worker.fitness * 0.01 + avg_fitness.value * 0.99
-    if count.value % 50 == 0 or (not mutate and count.value % 3 == 0):
-        msg = '{}, count {:04d}, fitness: {:>.0f}, avg_fitness: {:.1f}'.format(worker_name, count.value, worker.fitness, avg_fitness.value)
+    if count.value % 50 == 0 or (not mutate and count.value % 2 == 0):
+        msg = '{}, count {:04d}, fitness: {:>.0f}, steps: {:>.0f}, avg_fitness: {:.1f}'.format(worker_name, count.value, worker.fitness, steps, avg_fitness.value)
         logger.info(msg)
     return worker.encode()
 
@@ -75,6 +76,8 @@ avg_fitness = Value('d', 0.0)
 initargs = (noise_table, ENV_NAME, MUTATION_POWER, count, avg_fitness)
 pool = Pool(processes=NUM_WORKER, initializer=init_processes, initargs=initargs)
 
+elite_fitness_history = []
+
 start = datetime.now()
 for generation in range(MAX_GENERATIONS):
     if generation == 0:
@@ -86,10 +89,11 @@ for generation in range(MAX_GENERATIONS):
     children = []
 
     selected_parents_idx = np.random.randint(0, high=TRUNCATE_SIZE, size=POPULATION_SIZE)
-    selected_parents = [parents[idx] for idx in selected_parents_idx]
+    selected_parents = [copy.deepcopy(parents[idx]) for idx in selected_parents_idx]
 
     logger.info('Generation {}, Start population rollout.'.format(generation))
-    children = pool.map(run_parent, parents)
+    children = pool.map(run_parent, selected_parents)
+    logger.info('Generation {}, End population rollout.'.format(generation))
     count.value = 0
 
     children.sort(key=lambda x: x['fitness'], reverse=True)
@@ -118,5 +122,13 @@ for generation in range(MAX_GENERATIONS):
     logger.info(elite['genotypes'])
     logger.info('*** ' + str(datetime.now() - start)[:7] + ' ***\n')
     save_json(elite, '.cache/')
+    elite_fitness_history.append(elite['fitness'])
 
+pool.terminate()
 pool.close()
+with open('1219.pkl', 'wb') as f:
+    import pickle
+    pickle.dump((elite, parents), f)
+# with open('1218.pkl', 'rb') as f:
+#     import pickle
+#     elite, parents = pickle.load(f)
