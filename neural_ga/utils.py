@@ -63,19 +63,23 @@ def rollout(model, env, max_steps=1000, rendering=False, return_steps=False,
     convert_to_state = ConvertToState()
     total_reward = 0.0
     total_steps = 0
+    env.reset()
     for e in range(episode):
+        steps = 0
+        env.reset()
+        convert_to_state.reset()
+
         for i in range(max_steps):
             state = convert_to_state.convert(observation)
             action = model.choose_action(state)
             observation, reward, done, _ = env.step(action)
             total_reward += reward
-
+            steps += 1
             if rendering:
                 render(env)
             if done:
-                env.reset()
-                total_steps += i
                 break
+        total_steps += steps
 
     if return_steps:
         return total_reward / episode, float(i) / episode
