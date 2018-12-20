@@ -126,9 +126,3 @@ for generation in range(MAX_GENERATIONS):
 
 pool.terminate()
 pool.close()
-with open('1219.pkl', 'wb') as f:
-    import pickle
-    pickle.dump((elite, parents), f)
-# with open('1218.pkl', 'rb') as f:
-#     import pickle
-#     elite, parents = pickle.load(f)
